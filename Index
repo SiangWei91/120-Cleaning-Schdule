@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Cleaning Schedule</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 16px;
+            background-color: #f0f0f0;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: #f8f9fa;
+        }
+
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            align-items: center;
+            padding: 8px 0;
+        }
+
+        .date-display, .weekday-display {
+            padding: 8px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            text-align: center;
+        }
+        
+        select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Home Cleaning Schedule</h1>
+        
+        <table id="scheduleTable">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Weekday</th>
+                    <th>Name</th>
+                </tr>
+            </thead>
+            <tbody id="scheduleBody"></tbody>
+        </table>
+        
+        <div class="input-row">
+            <div class="date-display" id="todayDate"></div>
+            <div class="weekday-display" id="todayWeekday"></div>
+            <select id="nameSelect" onchange="saveName()">
+                <option value="">Select Name</option>
+                <option value="Sin Ying">Sin Ying</option>
+                <option value="Sin Yek">Sin Yek</option>
+                <option value="Jason">Jason</option>
+                <option value="Siang Wei">Siang Wei</option>
+                <option value="Chee Ka">Chee Ka</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="loading" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <script>
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxKVaMJX1dp3aMRIdxjw2alfkFkGC8aPjvDaW1h8B4ipMgXKNiIY2iU8XM30loLhEc_/exec';
+
+        function formatDate(date) {
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+
+        function getWeekday(date) {
+            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            return days[date.getDay()];
+        }
+
+        function updateTodayDisplay() {
+            const today = new Date();
+            document.getElementById('todayDate').textContent = formatDate(today);
+            document.getElementById('todayWeekday').textContent = getWeekday(today);
+        }
+
+        async function fetchSchedule() {
+            try {
+                const response = await fetch(SCRIPT_URL);
+                const data = await response.json();
+                const tbody = document.getElementById('scheduleBody');
+                tbody.innerHTML = '';
+                
+                data.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${row.Date}</td>
+                        <td>${row.Weekday}</td>
+                        <td>${row.Name}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        }
+
+        async function saveName() {
+            const nameSelect = document.getElementById('nameSelect');
+            const selectedName = nameSelect.value;
+            
+            if (!selectedName) return;
+
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            loadingOverlay.style.display = 'flex';
+
+            const today = new Date();
+            const newEntry = {
+                Date: formatDate(today),
+                Weekday: getWeekday(today),
+                Name: selectedName
+            };
+
+            try {
+                await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(newEntry)
+                });
+                
+                await fetchSchedule();
+                nameSelect.value = '';
+            } catch (error) {
+                console.error('Error saving entry:', error);
+            } finally {
+                loadingOverlay.style.display = 'none';
+            }
+        }
+
+        // Initial load
+        updateTodayDisplay();
+        fetchSchedule();
+    </script>
+</body>
+</html>
