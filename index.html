@@ -169,104 +169,79 @@
         }
 
         async function fetchSchedule() {
-            const tableLoading = document.getElementById('tableLoading');
-            const scheduleTable = document.getElementById('scheduleTable');
-            
-            tableLoading.style.display = 'flex';
-            scheduleTable.style.display = 'none';
-            
-            try {
-                const response = await fetch(SCRIPT_URL);
-                const data = await response.json();
-                const tbody = document.getElementById('scheduleBody');
-                tbody.innerHTML = '';
-                
-                data.forEach(row => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${row.Date}</td>
-                        <td>${row.Weekday}</td>
-                        <td>${row.Name}</td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-            } catch (error) {
-                console.error('Error fetching data:', error);
-            } finally {
-                tableLoading.style.display = 'none';
-                scheduleTable.style.display = 'table';
-            }
+    const tableLoading = document.getElementById('tableLoading');
+    const scheduleTable = document.getElementById('scheduleTable');
+    
+    tableLoading.style.display = 'flex';
+    scheduleTable.style.display = 'none';
+    
+    try {
+        const response = await fetch(SCRIPT_URL + '?v=' + new Date().getTime());
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
         }
+        const data = await response.json();
+        console.log('Fetched data:', data); // For debugging
+        
+        const tbody = document.getElementById('scheduleBody');
+        tbody.innerHTML = '';
+        
+        data.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${row.Date}</td>
+                <td>${row.Weekday}</td>
+                <td>${row.Name || ''}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (error) {
+        console.error('Error details:', error);
+        alert('Error fetching schedule: ' + error.message);
+    } finally {
+        tableLoading.style.display = 'none';
+        scheduleTable.style.display = 'table';
+    }
+}
 
-          async function fetchSchedule() {
-            const tableLoading = document.getElementById('tableLoading');
-            const scheduleTable = document.getElementById('scheduleTable');
-            
-            tableLoading.style.display = 'flex';
-            scheduleTable.style.display = 'none';
-            
-            try {
-                const response = await fetch(SCRIPT_URL);
-                const data = await response.json();
-                const tbody = document.getElementById('scheduleBody');
-                tbody.innerHTML = '';
-                
-                data.forEach(row => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${row.Date}</td>
-                        <td>${row.Weekday}</td>
-                        <td>${row.Name}</td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-            } catch (error) {
-                console.error('Error fetching data:', error);
-                alert('Error fetching schedule. Please try again.');
-            } finally {
-                tableLoading.style.display = 'none';
-                scheduleTable.style.display = 'table';
-            }
-        }
+async function saveName() {
+    const nameSelect = document.getElementById('nameSelect');
+    const selectedName = nameSelect.value;
+    
+    if (!selectedName) return;
 
-        async function saveName() {
-            const nameSelect = document.getElementById('nameSelect');
-            const selectedName = nameSelect.value;
-            
-            if (!selectedName) return;
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    loadingOverlay.style.display = 'flex';
 
-            const loadingOverlay = document.getElementById('loadingOverlay');
-            loadingOverlay.style.display = 'flex';
+    const today = new Date();
+    const newEntry = {
+        Date: formatDate(today),
+        Weekday: getWeekday(today),
+        Name: selectedName
+    };
 
-            const today = new Date();
-            const newEntry = {
-                Date: formatDate(today),
-                Weekday: getWeekday(today),
-                Name: selectedName
-            };
-
-            try {
-                const response = await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(newEntry)
-                });
-                
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                
-                await fetchSchedule();
-                nameSelect.value = '';
-            } catch (error) {
-                console.error('Error saving entry:', error);
-                alert('Error saving entry. Please try again.');
-            } finally {
-                loadingOverlay.style.display = 'none';
-            }
-        }
+    try {
+        console.log('Sending data:', newEntry); // For debugging
+        
+        const response = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: {
+                'Content-Type': 'text/plain',
+            },
+            body: JSON.stringify(newEntry)
+        });
+        
+        nameSelect.value = '';
+        await fetchSchedule();
+        
+    } catch (error) {
+        console.error('Error details:', error);
+        alert('Error saving entry: ' + error.message);
+    } finally {
+        loadingOverlay.style.display = 'none';
+    }
+}
 
         // Initial load
         updateTodayDisplay();
