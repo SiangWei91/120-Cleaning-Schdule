@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#34998db">
+    <link rel="manifest" href="manifest.json">
     <title>Home Cleaning Schedule</title>
     <style>
         body {
@@ -71,6 +73,13 @@
             display: none;
             justify-content: center;
             align-items: center;
+            z-index: 1000;
+        }
+        
+        .table-loading {
+            display: none;
+            justify-content: center;
+            padding: 20px;
         }
         
         .spinner {
@@ -91,6 +100,10 @@
 <body>
     <div class="container">
         <h1>Home Cleaning Schedule</h1>
+        
+        <div class="table-loading" id="tableLoading">
+            <div class="spinner"></div>
+        </div>
         
         <table id="scheduleTable">
             <thead>
@@ -124,6 +137,19 @@
     <script>
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxKVaMJX1dp3aMRIdxjw2alfkFkGC8aPjvDaW1h8B4ipMgXKNiIY2iU8XM30loLhEc_/exec';
 
+        // Register service worker for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful');
+                    })
+                    .catch(err => {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
+
         function formatDate(date) {
             const day = String(date.getDate()).padStart(2, '0');
             const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -143,6 +169,12 @@
         }
 
         async function fetchSchedule() {
+            const tableLoading = document.getElementById('tableLoading');
+            const scheduleTable = document.getElementById('scheduleTable');
+            
+            tableLoading.style.display = 'flex';
+            scheduleTable.style.display = 'none';
+            
             try {
                 const response = await fetch(SCRIPT_URL);
                 const data = await response.json();
@@ -160,6 +192,9 @@
                 });
             } catch (error) {
                 console.error('Error fetching data:', error);
+            } finally {
+                tableLoading.style.display = 'none';
+                scheduleTable.style.display = 'table';
             }
         }
 
