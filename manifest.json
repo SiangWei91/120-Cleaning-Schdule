@@ -1,7 +1,7 @@
 {
   "name": "Home Cleaning Schedule",
   "short_name": "Cleaning Schedule",
-  "start_url": ".",
+  "start_url": "/120-Cleaning-Schdule/"
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#3498db",
