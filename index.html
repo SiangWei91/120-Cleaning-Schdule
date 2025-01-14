@@ -5,62 +5,111 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#34998db">
     <link rel="manifest" href="/120-Cleaning-Schdule/manifest.json">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
     <title>Home Cleaning Schedule</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Inter', sans-serif;
             margin: 0;
-            padding: 16px;
-            background-color: #f0f0f0;
+            padding: 24px;
+            background-color: #f5f7fa;
+            color: #1a1a1a;
+            line-height: 1.5;
         }
         
         .container {
-            max-width: 600px;
+            max-width: 800px;
             margin: 0 auto;
             background: white;
-            border-radius: 8px;
-            padding: 16px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        h1 {
+            color: #2d3748;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 24px;
+            text-align: center;
         }
         
         table {
             width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 16px;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-bottom: 24px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
         }
         
         th, td {
-            padding: 12px;
+            padding: 16px;
             text-align: left;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid #e2e8f0;
         }
         
         th {
-            background-color: #f8f9fa;
+            background-color: #3498db;
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 14px;
+            letter-spacing: 0.05em;
+        }
+
+        tr:hover {
+            background-color: #f8fafc;
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
         }
 
         .input-row {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
-            gap: 8px;
+            gap: 16px;
             align-items: center;
-            padding: 8px 0;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 12px;
+            margin-top: 24px;
         }
 
         .date-display, .weekday-display {
-            padding: 8px;
-            background-color: #f8f9fa;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            padding: 12px;
+            background-color: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
             text-align: center;
+            font-weight: 500;
+            color: #2d3748;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
         }
         
         select {
             width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 13px;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: 'Inter', sans-serif;
+            background-color: white;
+            color: #2d3748;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        select:hover {
+            border-color: #3498db;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
         }
         
         .loading {
@@ -69,24 +118,25 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0,0,0,0.6);
             display: none;
             justify-content: center;
             align-items: center;
             z-index: 1000;
+            backdrop-filter: blur(4px);
         }
         
         .table-loading {
             display: none;
             justify-content: center;
-            padding: 20px;
+            padding: 32px;
         }
         
         .spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #3498db;
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #3498db;
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -94,6 +144,26 @@
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 16px;
+            }
+
+            .container {
+                padding: 16px;
+            }
+
+            .input-row {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            th, td {
+                padding: 12px;
+                font-size: 14px;
+            }
         }
     </style>
 </head>
@@ -137,18 +207,17 @@
     <script>
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxKVaMJX1dp3aMRIdxjw2alfkFkGC8aPjvDaW1h8B4ipMgXKNiIY2iU8XM30loLhEc_/exec';
 
-        // Register service worker for PWA
         if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/120-Cleaning-Schdule/sw.js')
-            .then(registration => {
-                console.log('ServiceWorker registration successful');
-            })
-            .catch(err => {
-                console.log('ServiceWorker registration failed: ', err);
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/120-Cleaning-Schdule/sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful');
+                    })
+                    .catch(err => {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
             });
-    });
-}
+        }
 
         function formatDate(date) {
             const day = String(date.getDate()).padStart(2, '0');
@@ -169,79 +238,79 @@
         }
 
         async function fetchSchedule() {
-    const tableLoading = document.getElementById('tableLoading');
-    const scheduleTable = document.getElementById('scheduleTable');
-    
-    tableLoading.style.display = 'flex';
-    scheduleTable.style.display = 'none';
-    
-    try {
-        const response = await fetch(SCRIPT_URL + '?v=' + new Date().getTime());
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
+            const tableLoading = document.getElementById('tableLoading');
+            const scheduleTable = document.getElementById('scheduleTable');
+            
+            tableLoading.style.display = 'flex';
+            scheduleTable.style.display = 'none';
+            
+            try {
+                const response = await fetch(SCRIPT_URL + '?v=' + new Date().getTime());
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const data = await response.json();
+                console.log('Fetched data:', data);
+                
+                const tbody = document.getElementById('scheduleBody');
+                tbody.innerHTML = '';
+                
+                data.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${row.Date}</td>
+                        <td>${row.Weekday}</td>
+                        <td>${row.Name || ''}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (error) {
+                console.error('Error details:', error);
+                alert('Error fetching schedule: ' + error.message);
+            } finally {
+                tableLoading.style.display = 'none';
+                scheduleTable.style.display = 'table';
+            }
         }
-        const data = await response.json();
-        console.log('Fetched data:', data); // For debugging
-        
-        const tbody = document.getElementById('scheduleBody');
-        tbody.innerHTML = '';
-        
-        data.forEach(row => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${row.Date}</td>
-                <td>${row.Weekday}</td>
-                <td>${row.Name || ''}</td>
-            `;
-            tbody.appendChild(tr);
-        });
-    } catch (error) {
-        console.error('Error details:', error);
-        alert('Error fetching schedule: ' + error.message);
-    } finally {
-        tableLoading.style.display = 'none';
-        scheduleTable.style.display = 'table';
-    }
-}
 
-async function saveName() {
-    const nameSelect = document.getElementById('nameSelect');
-    const selectedName = nameSelect.value;
-    
-    if (!selectedName) return;
+        async function saveName() {
+            const nameSelect = document.getElementById('nameSelect');
+            const selectedName = nameSelect.value;
+            
+            if (!selectedName) return;
 
-    const loadingOverlay = document.getElementById('loadingOverlay');
-    loadingOverlay.style.display = 'flex';
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            loadingOverlay.style.display = 'flex';
 
-    const today = new Date();
-    const newEntry = {
-        Date: formatDate(today),
-        Weekday: getWeekday(today),
-        Name: selectedName
-    };
+            const today = new Date();
+            const newEntry = {
+                Date: formatDate(today),
+                Weekday: getWeekday(today),
+                Name: selectedName
+            };
 
-    try {
-        console.log('Sending data:', newEntry); // For debugging
-        
-        const response = await fetch(SCRIPT_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: {
-                'Content-Type': 'text/plain',
-            },
-            body: JSON.stringify(newEntry)
-        });
-        
-        nameSelect.value = '';
-        await fetchSchedule();
-        
-    } catch (error) {
-        console.error('Error details:', error);
-        alert('Error saving entry: ' + error.message);
-    } finally {
-        loadingOverlay.style.display = 'none';
-    }
-}
+            try {
+                console.log('Sending data:', newEntry);
+                
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'text/plain',
+                    },
+                    body: JSON.stringify(newEntry)
+                });
+                
+                nameSelect.value = '';
+                await fetchSchedule();
+                
+            } catch (error) {
+                console.error('Error details:', error);
+                alert('Error saving entry: ' + error.message);
+            } finally {
+                loadingOverlay.style.display = 'none';
+            }
+        }
 
         // Initial load
         updateTodayDisplay();
