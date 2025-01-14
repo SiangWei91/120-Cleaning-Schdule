@@ -46,7 +46,7 @@
         
         th, td {
             padding: 16px;
-            text-align: left;
+            text-align: center;
             border-bottom: 1px solid #e2e8f0;
         }
         
@@ -92,23 +92,29 @@
         select {
             width: 100%;
             padding: 12px;
-            border: 1px solid #e2e8f0;
+            border: 2px solid #3498db;
             border-radius: 8px;
-            font-size: 16px;
+            font-size: 14px;
             font-family: 'Inter', sans-serif;
             background-color: white;
             color: #2d3748;
             cursor: pointer;
             transition: all 0.2s;
+            font-weight: 600;
+            text-align: center;
+            text-align-last: center;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
         }
 
         select:hover {
-            border-color: #3498db;
+            border-color: #2980b9;
         }
 
         select:focus {
             outline: none;
-            border-color: #3498db;
+            border-color: #2980b9;
             box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
         }
         
@@ -124,12 +130,6 @@
             align-items: center;
             z-index: 1000;
             backdrop-filter: blur(4px);
-        }
-        
-        .table-loading {
-            display: none;
-            justify-content: center;
-            padding: 32px;
         }
         
         .spinner {
@@ -170,10 +170,6 @@
 <body>
     <div class="container">
         <h1>Home Cleaning Schedule</h1>
-        
-        <div class="table-loading" id="tableLoading">
-            <div class="spinner"></div>
-        </div>
         
         <table id="scheduleTable">
             <thead>
@@ -238,11 +234,13 @@
         }
 
         async function fetchSchedule() {
-            const tableLoading = document.getElementById('tableLoading');
             const scheduleTable = document.getElementById('scheduleTable');
+            const loadingOverlay = document.getElementById('loadingOverlay');
             
-            tableLoading.style.display = 'flex';
-            scheduleTable.style.display = 'none';
+            // Only show loading on initial load
+            if (!scheduleTable.hasAttribute('data-loaded')) {
+                loadingOverlay.style.display = 'flex';
+            }
             
             try {
                 const response = await fetch(SCRIPT_URL + '?v=' + new Date().getTime());
@@ -250,7 +248,6 @@
                     throw new Error('Network response was not ok');
                 }
                 const data = await response.json();
-                console.log('Fetched data:', data);
                 
                 const tbody = document.getElementById('scheduleBody');
                 tbody.innerHTML = '';
@@ -264,12 +261,14 @@
                     `;
                     tbody.appendChild(tr);
                 });
+                
+                // Mark table as loaded
+                scheduleTable.setAttribute('data-loaded', 'true');
             } catch (error) {
                 console.error('Error details:', error);
                 alert('Error fetching schedule: ' + error.message);
             } finally {
-                tableLoading.style.display = 'none';
-                scheduleTable.style.display = 'table';
+                loadingOverlay.style.display = 'none';
             }
         }
 
