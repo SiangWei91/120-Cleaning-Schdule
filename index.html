@@ -200,120 +200,198 @@
         <div class="spinner"></div>
     </div>
 
-    <script>
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxKVaMJX1dp3aMRIdxjw2alfkFkGC8aPjvDaW1h8B4ipMgXKNiIY2iU8XM30loLhEc_/exec';
+<script>
+// Firebase configuration - for testing only
+const FIREBASE_URL = 'https://home-cleaning-schedule-ca19b-default-rtdb.asia-southeast1.firebasedatabase.app';
+const FIREBASE_API_KEY = 'AIzaSyCkmMCs2FK152zAgVvEzAR_-SUA3bbHWAQ';
 
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/120-Cleaning-Schdule/sw.js')
-                    .then(registration => {
-                        console.log('ServiceWorker registration successful');
-                    })
-                    .catch(err => {
-                        console.log('ServiceWorker registration failed: ', err);
-                    });
+// Date formatting functions
+function formatDate(date) {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+}
+
+function getWeekday(date) {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    return days[date.getDay()];
+}
+
+function updateTodayDisplay() {
+    const today = new Date();
+    document.getElementById('todayDate').textContent = formatDate(today);
+    document.getElementById('todayWeekday').textContent = getWeekday(today);
+}
+
+// Fixed fetchSchedule function to directly access Firebase
+async function fetchSchedule() {
+    const scheduleTable = document.getElementById('scheduleTable');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    
+    if (!scheduleTable.hasAttribute('data-loaded')) {
+        loadingOverlay.style.display = 'flex';
+    }
+    
+    try {
+        // Direct Firebase access with correct URL formatting
+        const url = `${FIREBASE_URL}/ProductList.json`;
+        console.log('Fetching from URL:', url);
+        
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('Retrieved data:', data);
+        
+        const tbody = document.getElementById('scheduleBody');
+        tbody.innerHTML = '';
+        
+        // If no data available, show a message
+        if (!data) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = '<td colspan="3">No schedule data available</td>';
+            tbody.appendChild(tr);
+            scheduleTable.setAttribute('data-loaded', 'true');
+            return;
+        }
+        
+        // Handle the nested structure - get the first key (e.g., -QKj7VfY6_kUh7_ZoRnB)
+        const mainKey = Object.keys(data)[0];
+        if (!mainKey || !Array.isArray(data[mainKey])) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = '<td colspan="3">Invalid data structure</td>';
+            tbody.appendChild(tr);
+            scheduleTable.setAttribute('data-loaded', 'true');
+            return;
+        }
+        
+        // Use the array directly
+        const scheduleArray = data[mainKey];
+        
+        // Sort by date (assuming DD/MM/YYYY format)
+        scheduleArray.sort((a, b) => {
+            const [aDay, aMonth, aYear] = a.Date.split('/').map(Number);
+            const [bDay, bMonth, bYear] = b.Date.split('/').map(Number);
+            
+            if (aYear !== bYear) return aYear - bYear;
+            if (aMonth !== bMonth) return aMonth - bMonth;
+            return aDay - bDay;
+        });
+        
+        // Get only the most recent 11 entries
+        const recentEntries = scheduleArray.slice(-11);
+        
+        recentEntries.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${row.Date}</td>
+                <td>${row.Weekday}</td>
+                <td>${row.Name || ''}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+        
+        scheduleTable.setAttribute('data-loaded', 'true');
+    } catch (error) {
+        console.error('Error details:', error);
+        alert('Error fetching schedule: ' + error.message);
+    } finally {
+        loadingOverlay.style.display = 'none';
+    }
+}
+// Fixed saveName function
+async function saveName() {
+    const nameSelect = document.getElementById('nameSelect');
+    const selectedName = nameSelect.value;
+    
+    if (!selectedName) return;
+
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    loadingOverlay.style.display = 'flex';
+
+    const today = new Date();
+    const newEntry = {
+        Date: formatDate(today),
+        Weekday: getWeekday(today),
+        Name: selectedName
+    };
+
+    try {
+        // First fetch the current data
+        const getUrl = `${FIREBASE_URL}/ProductList.json`;
+        const getResponse = await fetch(getUrl);
+        
+        if (!getResponse.ok) {
+            throw new Error(`Network response was not ok: ${getResponse.status} ${getResponse.statusText}`);
+        }
+        
+        const currentData = await getResponse.json();
+        console.log('Current data:', currentData);
+        
+        // Get the main key
+        const mainKey = Object.keys(currentData)[0];
+        
+        if (!mainKey) {
+            throw new Error('No main key found in data');
+        }
+        
+        // Get the current array
+        const currentArray = currentData[mainKey];
+        
+        if (!Array.isArray(currentArray)) {
+            throw new Error('Data structure is not as expected');
+        }
+        
+        // Append the new entry
+        currentArray.push(newEntry);
+        
+        // Update the entire array
+        const updateUrl = `${FIREBASE_URL}/ProductList/${mainKey}.json`;
+        const updateResponse = await fetch(updateUrl, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(currentArray)
+        });
+        
+        if (!updateResponse.ok) {
+            const errorData = await updateResponse.json();
+            throw new Error(`Firebase error: ${JSON.stringify(errorData)}`);
+        }
+        
+        console.log('Data saved successfully');
+        nameSelect.value = '';
+        await fetchSchedule();
+        
+    } catch (error) {
+        console.error('Error details:', error);
+        alert('Error saving entry: ' + error.message);
+    } finally {
+        loadingOverlay.style.display = 'none';
+    }
+}
+// Service Worker registration - only if needed
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        // Using a relative path for testing
+        navigator.serviceWorker.register('./sw.js')
+            .then(registration => {
+                console.log('ServiceWorker registration successful');
+            })
+            .catch(err => {
+                console.log('ServiceWorker registration failed: ', err);
             });
-        }
+    });
+}
 
-        function formatDate(date) {
-            const day = String(date.getDate()).padStart(2, '0');
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const year = date.getFullYear();
-            return `${day}/${month}/${year}`;
-        }
-
-        function getWeekday(date) {
-            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-            return days[date.getDay()];
-        }
-
-        function updateTodayDisplay() {
-            const today = new Date();
-            document.getElementById('todayDate').textContent = formatDate(today);
-            document.getElementById('todayWeekday').textContent = getWeekday(today);
-        }
-
-        async function fetchSchedule() {
-            const scheduleTable = document.getElementById('scheduleTable');
-            const loadingOverlay = document.getElementById('loadingOverlay');
-            
-            // Only show loading on initial load
-            if (!scheduleTable.hasAttribute('data-loaded')) {
-                loadingOverlay.style.display = 'flex';
-            }
-            
-            try {
-                const response = await fetch(SCRIPT_URL + '?v=' + new Date().getTime());
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                const data = await response.json();
-                
-                const tbody = document.getElementById('scheduleBody');
-                tbody.innerHTML = '';
-                
-                data.forEach(row => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${row.Date}</td>
-                        <td>${row.Weekday}</td>
-                        <td>${row.Name || ''}</td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-                
-                // Mark table as loaded
-                scheduleTable.setAttribute('data-loaded', 'true');
-            } catch (error) {
-                console.error('Error details:', error);
-                alert('Error fetching schedule: ' + error.message);
-            } finally {
-                loadingOverlay.style.display = 'none';
-            }
-        }
-
-        async function saveName() {
-            const nameSelect = document.getElementById('nameSelect');
-            const selectedName = nameSelect.value;
-            
-            if (!selectedName) return;
-
-            const loadingOverlay = document.getElementById('loadingOverlay');
-            loadingOverlay.style.display = 'flex';
-
-            const today = new Date();
-            const newEntry = {
-                Date: formatDate(today),
-                Weekday: getWeekday(today),
-                Name: selectedName
-            };
-
-            try {
-                console.log('Sending data:', newEntry);
-                
-                const response = await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: {
-                        'Content-Type': 'text/plain',
-                    },
-                    body: JSON.stringify(newEntry)
-                });
-                
-                nameSelect.value = '';
-                await fetchSchedule();
-                
-            } catch (error) {
-                console.error('Error details:', error);
-                alert('Error saving entry: ' + error.message);
-            } finally {
-                loadingOverlay.style.display = 'none';
-            }
-        }
-
-        // Initial load
-        updateTodayDisplay();
-        fetchSchedule();
-    </script>
+// Initial load
+updateTodayDisplay();
+fetchSchedule();
+</script>
 </body>
 </html>
