@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v8';
+const CACHE_VERSION = 'v8.1';
 const CACHE_NAME = `cleaning-schedule-${CACHE_VERSION}`;
 
 self.addEventListener('install', (event) => {
