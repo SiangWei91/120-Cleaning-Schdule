@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v8.1';
+const CACHE_VERSION = 'v8.2';
 const CACHE_NAME = `cleaning-schedule-${CACHE_VERSION}`;
 
 self.addEventListener('install', (event) => {
@@ -11,7 +11,7 @@ self.addEventListener('install', (event) => {
                 '/120-Cleaning-Schdule/icon-192x192.png',
                 '/120-Cleaning-Schdule/icon-512x512.png'
             ]);
-        })
+        }).then(() => self.skipWaiting())
     );
 });
 
@@ -26,6 +26,6 @@ self.addEventListener('activate', (event) => {
                     }
                 })
             );
-        })
+        }).then(() => self.clients.claim())
     );
 });
