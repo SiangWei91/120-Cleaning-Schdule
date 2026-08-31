@@ -138,9 +138,13 @@ in the history and in the old rounds.
 
 ## Still to do
 
-**Database rules are wide open.** Writes succeed with no auth, which means
-anyone with the URL can read, overwrite or wipe the roster. Lock it down in the
-Firebase console under Realtime Database → Rules. Minimum viable version:
+**Database rules are wide open.** The app works exactly as it is — this is not
+a bug to fix before shipping. But writes succeed with no auth, and the database
+URL is readable in the shipped JavaScript, so anyone who views source can wipe
+the roster with a single request. Lock it down in the Firebase console under
+Realtime Database → Rules whenever convenient. Minimum viable version, and note
+it has to allow every field the app writes (`for`, `away`, `since`) or those
+writes start failing:
 
 ```json
 {
@@ -152,6 +156,7 @@ Firebase console under Realtime Database → Rules. Minimum viable version:
         ".validate": "newData.hasChildren(['date','name','createdAt'])",
         "date": { ".validate": "newData.isString() && newData.val().matches(/^\\d{4}-\\d{2}-\\d{2}$/)" },
         "name": { ".validate": "newData.isString() && newData.val().length < 40" },
+        "for": { ".validate": "newData.isString() && newData.val().length < 40" },
         "createdAt": { ".validate": "newData.isNumber()" }
       }
     },
@@ -162,7 +167,8 @@ Firebase console under Realtime Database → Rules. Minimum viable version:
         ".validate": "newData.hasChildren(['name','createdAt'])",
         "name": { ".validate": "newData.isString() && newData.val().length < 40" },
         "createdAt": { ".validate": "newData.isNumber()" },
-        "away": { ".validate": "newData.isBoolean()" }
+        "away": { ".validate": "newData.isBoolean()" },
+        "since": { ".validate": "newData.isString()" }
       }
     },
     "ProductList": { ".read": true, ".write": false }

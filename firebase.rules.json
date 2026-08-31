@@ -1,0 +1,56 @@
+{
+  "_comment": [
+    "Paste this into Firebase console -> Realtime Database -> Rules -> Publish.",
+    "It cannot be deployed from this repo: changing rules needs an admin",
+    "credential (a service account key or the legacy database secret), and this",
+    "project deliberately has neither, because anything it contained would ship",
+    "inside the public JavaScript bundle.",
+    "",
+    "This still lets anyone write - there are no accounts - but it stops the two",
+    "things that actually bite: garbage shapes going in, and the original data",
+    "being overwritten. Every field the app writes has to be listed here, or",
+    "those writes start failing silently.",
+    "",
+    "Real protection means Firebase Auth, which means everyone signing in."
+  ],
+
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "entries": {
+      ".read": true,
+      ".write": true,
+      "$entry": {
+        ".validate": "newData.hasChildren(['date', 'name', 'createdAt'])",
+        "date": {
+          ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/)"
+        },
+        "name": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length < 40" },
+        "for": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length < 40" },
+        "createdAt": { ".validate": "newData.isNumber()" },
+        "$other": { ".validate": false }
+      }
+    },
+
+    "people": {
+      ".read": true,
+      ".write": true,
+      "$person": {
+        ".validate": "newData.hasChildren(['name', 'createdAt'])",
+        "name": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length < 40" },
+        "createdAt": { ".validate": "newData.isNumber()" },
+        "away": { ".validate": "newData.isBoolean()" },
+        "since": {
+          ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/)"
+        },
+        "$other": { ".validate": false }
+      }
+    },
+
+    "ProductList": {
+      ".read": true,
+      ".write": false
+    }
+  }
+}

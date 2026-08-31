@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   addEntry, addPerson, listEntries, listPeople, removeEntry, removePerson, setPersonAway,
 } from './lib/db'
@@ -31,7 +31,19 @@ export default function App() {
   const [showAll, setShowAll] = useState(false)
   const [toast, setToast] = useState<Toast>(null)
 
-  const refresh = useCallback(async () => {
+  /**
+   * Guard on the automatic refresh path. Phones fire visibilitychange far more
+   * often than a person actually opens the app — every notification shade, every
+   * app switch — and this is the one code path that could ever run away with the
+   * database quota. Anything the user asks for directly still goes straight
+   * through.
+   */
+  const lastFetch = useRef(0)
+  const MIN_GAP_MS = 30_000
+
+  const refresh = useCallback(async (automatic = false) => {
+    if (automatic && Date.now() - lastFetch.current < MIN_GAP_MS) return
+    lastFetch.current = Date.now()
     try {
       const [e, p] = await Promise.all([listEntries(), listPeople()])
       setEntries(e)
@@ -47,7 +59,7 @@ export default function App() {
   // Re-fetch when the app comes back to the foreground, so nobody is looking at
   // a stale screen after someone else has already logged the clean
   useEffect(() => {
-    const onVisible = () => { if (document.visibilityState === 'visible') void refresh() }
+    const onVisible = () => { if (document.visibilityState === 'visible') void refresh(true) }
     document.addEventListener('visibilitychange', onVisible)
     return () => document.removeEventListener('visibilitychange', onVisible)
   }, [refresh])
