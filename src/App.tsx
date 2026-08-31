@@ -74,19 +74,26 @@ export default function App() {
   const today = todayISO()
   const loading = entries === null || people === null
 
-  async function handleCheckIn(name: string, coveringFor?: string) {
+  async function handleCheckIn(name: string, date: string, coveringFor?: string) {
     setBusy(true)
     try {
       const created = await addEntry({
-        date: today,
+        date,
         name,
         createdAt: Date.now(),
         ...(coveringFor ? { for: coveringFor } : {}),
       })
-      setEntries((prev) => [...(prev ?? []), created])
+      // Backdated entries have to land in date order, not at the end
+      setEntries((prev) => [...(prev ?? []), created].sort(
+        (a, b) => (a.date === b.date ? a.createdAt - b.createdAt : a.date.localeCompare(b.date)),
+      ))
       setCheckInOpen(false)
       setToast({
-        text: coveringFor ? `Logged · ${name} for ${coveringFor}` : `Logged · ${name}`,
+        text: [
+          `Logged · ${name}`,
+          coveringFor ? `for ${coveringFor}` : '',
+          date === today ? '' : `on ${formatDate(date)}`,
+        ].filter(Boolean).join(' '),
         undo: async () => {
           setToast(null)
           try {
@@ -240,9 +247,10 @@ export default function App() {
       <CheckIn
         open={checkInOpen}
         status={status}
+        entries={entries ?? []}
         busy={busy}
         onClose={() => setCheckInOpen(false)}
-        onConfirm={(name, coveringFor) => void handleCheckIn(name, coveringFor)}
+        onConfirm={(name, date, coveringFor) => void handleCheckIn(name, date, coveringFor)}
       />
 
       <BottomSheet
