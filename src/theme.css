@@ -330,11 +330,22 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .btn.danger-text { color: var(--danger); }
 
 /* ---------- Date picker in the log sheet ---------- */
-.date-field { display: block; margin-bottom: 16px; }
+.date-field { margin-bottom: 16px; }
 .date-field .dl {
   display: block; font-size: 12px; font-weight: 700; letter-spacing: .06em;
   text-transform: uppercase; color: var(--text-dim); margin-bottom: 7px;
 }
-.date-field .dl-note { color: var(--accent); text-transform: none; letter-spacing: 0; }
-.date-field .dl-day { display: block; font-size: 12px; color: var(--text-dim); margin-top: 6px; }
-.date-field input[type='date'] { font-variant-numeric: tabular-nums; }
+.date-box {
+  position: relative; display: flex; align-items: baseline; gap: 10px;
+  padding: 13px 14px; background: var(--surface-2);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+}
+.date-box .dv { font-weight: 700; font-variant-numeric: tabular-nums; }
+.date-box .dd { flex: 1; text-align: right; font-size: 12px; color: var(--text-dim); }
+/* Invisible, but still the thing that gets tapped, so the native picker opens */
+.date-box input[type='date'] {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  opacity: 0; border: 0; margin: 0; padding: 0;
+  -webkit-appearance: none; appearance: none; background: transparent;
+}
+.date-box:focus-within { border-color: var(--accent); }

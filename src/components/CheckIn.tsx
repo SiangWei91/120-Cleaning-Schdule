@@ -108,20 +108,29 @@ export function CheckIn({ open, status, entries, busy, onClose, onConfirm }: Pro
       hint="Tap a name to log it. Tapped the wrong one? Tap the entry in History to remove it."
       onClose={close}
     >
-      <label className="date-field">
-        <span className="dl">
-          When
-          {!isToday && <span className="dl-note"> · {relativeDay(date)}</span>}
-        </span>
-        <input
-          type="date"
-          className="text-input"
-          value={date}
-          max={todayISO()}
-          onChange={(e) => { if (e.target.value) setDate(e.target.value) }}
-        />
-        <span className="dl-day">{weekday(date)}{isToday ? ' · today' : ''}</span>
-      </label>
+      {/*
+        A native date input renders in the browser's own locale, so on an
+        en-US phone it would read 08/26/2026 while every other date in the app
+        reads 26/08/2026 — exactly the kind of mix that gets a date logged
+        wrong. The input is kept for its native picker but made invisible over
+        a box that prints the date the same way as everywhere else.
+      */}
+      <div className="date-field">
+        <span className="dl">When</span>
+        <div className="date-box">
+          <span className="dv">{formatDate(date)}</span>
+          <span className="dd">
+            {weekday(date)} · {isToday ? 'today' : relativeDay(date)}
+          </span>
+          <input
+            type="date"
+            aria-label="Date of the clean"
+            value={date}
+            max={todayISO()}
+            onChange={(e) => { if (e.target.value) setDate(e.target.value) }}
+          />
+        </div>
+      </div>
 
       <div className="name-grid">
         {queue.map((q) => (
